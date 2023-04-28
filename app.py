@@ -3,36 +3,130 @@ from streamlit_drawable_canvas import st_canvas
 import numpy as np
 from PIL import Image
 import pickle
+from streamlit_option_menu import option_menu
+from streamlit_extras.switch_page_button import switch_page
 
-
-######################################################################################################
-# Charger le modèle entraîné
-with open('model.pickle', 'rb') as f:
-        model = pickle.load(f)
 
 # Configurer l'application Streamlit
 st.set_page_config(page_title="NBRECO", page_icon=":pencil2:", layout="wide")
 
 
+# charger le css
+# with open('style.css') as css:
+#         st.markdown(f'<style>{css.read}</style>', unsafe_allow_html=True)
+
+
+def local_css(file_name):
+    with open(file_name) as c:
+        st.markdown(f'<style>{c.read()}</style>', unsafe_allow_html=True)
+
+local_css("style.css")
+
+# Charger le modèle entraîné
+with open('model.pickle', 'rb') as f:
+        model = pickle.load(f)
+
+
+######################################################################################################
+
+
+
+def navigation_bar():
+    with st.container():
+        selected = option_menu(
+            menu_title=None,
+            options=["ACCEUIL", "GAME 1", "GAME 2"],
+            icons=['house', 'cloud-upload', "graph-up-arrow"],
+            menu_icon="cast",
+            orientation="horizontal",
+            styles={
+                "nav-link": {
+                    "text-align": "left",
+                    "--hover-color": "#ffc107",
+                    "background-color": "#ffc107",
+
+                },
+
+            }
+        )
+        if selected == "Analytics":
+            switch_page("Analytics")
+        if selected == "Contact":
+            switch_page("Contact")
+
+navigation_bar()
+
+
+# Initialiser la variable de session pour le choix de la page
+if 'page_choice' not in st.session_state:
+    st.session_state.page_choice = 'ACCEUIL'
+
+
+
+# Créer la barre de menu avec st.sidebar
+menu = ['ACCEUIL', 'GAME 1', 'GAME 2']
+choice = st.sidebar.selectbox('CHOISISSEZ UNE PAGE', menu, index=menu.index(st.session_state.page_choice))
+
 # the side bar that contains radio buttons for selection of game
 with st.sidebar:
-    st.header('Select an game to be displayed')
-    game = st.radio(
-    "Select the game you would like to play",
-    ('Acceuil','Game 1', 'Game 2'))
+    game = st.radio('SELECT A GAME',
+    ('ACCEUIL', 'GAME 1', 'GAME 2'),
+    index=('ACCEUIL', 'GAME 1', 'GAME 2').index(st.session_state.page_choice))
 
+
+# Stocker la valeur de la page sélectionnée dans la variable de session
+st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
 
 with st.container():
 
-    if game == 'Acceuil':
-        st.title('Bienvenu !')
+
+    if st.session_state.page_choice == 'ACCEUIL':
+        st.title('Bienvenue !')
         st.header('Tester notre application et tester les prédictions de notre modèle !')
 
-    if game == 'Game 1':
+    if st.session_state.page_choice == 'GAME 1':
         st.title('Number Recognition')
-        st.write("Game 1 en développement")
 
-    if game == 'Game 2':
+        # Function to preprocess the image
+        def preprocess_image(image):
+            # Convert the image to grayscale
+            image = image.convert('L')
+            # Resize the image to the required input shape of the model
+            image = image.resize((28, 28))
+            # Invert the pixel values
+            image = np.invert(image)
+            # Reshape the image to a 4D array with a batch size of 1
+            image = np.reshape(image, (1, 28, 28, 1))
+            # Normalize the pixel values
+            image = image / 255.0
+            return image
+
+        # Create a file uploader widget
+        uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
+
+        if uploaded_file is not None:
+            # Display the uploaded image
+            image = Image.open(uploaded_file)
+
+            # Resize the image to a width of 300 pixels and proportional height
+            width, height = image.size
+            new_width = 600
+            new_height = 600
+            resized_image = image.resize((new_width, new_height))
+
+            st.image(resized_image, caption='Uploaded Image', use_column_width=False)
+
+            # Preprocess the image
+            preprocessed_image = preprocess_image(image)
+
+            # Use the model to predict the number in the image
+            prediction = model.predict(preprocessed_image)
+            predicted_number = np.argmax(prediction)
+
+            # Display the predicted number
+            st.header(f"Predicted number is: {predicted_number}")
+
+    if st.session_state.page_choice == 'GAME 2':
         # Game 2
         st.title('Number Recognition')
         canvas_size = 300
@@ -46,11 +140,11 @@ with st.container():
 
         canvas = st_canvas(
             fill_color="black",
-            stroke_width=20,
+            stroke_width=10,
             stroke_color="white",
             background_color="black",
-            height=canvas_size,
-            width=canvas_size,
+            height=300,
+            width=300,
             drawing_mode="freedraw",
             key="canvas"
         )
