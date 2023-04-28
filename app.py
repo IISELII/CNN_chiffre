@@ -23,7 +23,7 @@ def local_css(file_name):
 local_css("style.css")
 
 # Charger le modèle entraîné
-with open('model.pickle', 'rb') as f:
+with open('model_3.pickle', 'rb') as f:
         model = pickle.load(f)
 
 
@@ -160,11 +160,13 @@ with st.container():
                 image = np.expand_dims(processed_img_array, axis=0)
 
                 # Prédire le chiffre en utilisant le modèle
-                prediction = model.predict(image)[0]
+                prediction = model.predict(image)
 
+                st.write(prediction)
                 # Ajouter la prédiction à la liste de prédictions
                 predictions.append(np.argmax(prediction))
 
+                st.write(np.argmax(predictions))
                 return predictions
 
             def test():
