@@ -29,9 +29,28 @@ with open('model.pickle', 'rb') as f:
 
 ######################################################################################################
 
+# Initialiser la variable de session pour le choix de la page
+# if 'page_choice' not in st.session_state:
+#     st.session_state.page_choice = 'ACCEUIL'
 
 
-def navigation_bar():
+
+# Créer la barre de menu avec st.sidebar
+# menu = ['ACCEUIL', 'GAME 1', 'GAME 2']
+# choice = st.sidebar.selectbox('CHOISISSEZ UNE PAGE', menu, index=menu.index(st.session_state.page_choice))
+
+# the side bar that contains radio buttons for selection of game
+# with st.sidebar:
+#     game = st.radio('SELECT A GAME',
+#     ('ACCEUIL', 'GAME 1', 'GAME 2'),
+#     index=('ACCEUIL', 'GAME 1', 'GAME 2').index(st.session_state.page_choice))
+
+
+# Stocker la valeur de la page sélectionnée dans la variable de session
+# st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
+
+with st.container():
+
     with st.container():
         selected = option_menu(
             menu_title=None,
@@ -43,70 +62,42 @@ def navigation_bar():
                 "nav-link": {
                     "text-align": "left",
                     "--hover-color": "#ffc107",
-                    "background-color": "#ffc107",
-
                 },
+
+                "nav-link-selected": {"background-color": "#ffc107"},
+
 
             }
         )
-        if selected == "Analytics":
-            switch_page("Analytics")
-        if selected == "Contact":
-            switch_page("Contact")
 
-navigation_bar()
+        if selected == "ACCEUIL":
+            st.subheader('ACCEUIL')
+            st.title('Bienvenue !')
+            st.header('Tester notre application et tester les prédictions de notre modèle !')
 
+        if selected == "GAME 1":
+            st.title('Number Recognition')
 
-# Initialiser la variable de session pour le choix de la page
-if 'page_choice' not in st.session_state:
-    st.session_state.page_choice = 'ACCEUIL'
+            # Function to preprocess the image
+            def preprocess_image(image):
+                # Convert the image to grayscale
+                image = image.convert('L')
+                # Resize the image to the required input shape of the model
+                image = image.resize((28, 28))
+                # Invert the pixel values
+                image = np.invert(image)
+                # Reshape the image to a 4D array with a batch size of 1
+                image = np.reshape(image, (1, 28, 28, 1))
+                # Normalize the pixel values
+                image = image / 255.0
+                return image
 
+            # Create a file uploader widget
+            uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
-
-# Créer la barre de menu avec st.sidebar
-menu = ['ACCEUIL', 'GAME 1', 'GAME 2']
-choice = st.sidebar.selectbox('CHOISISSEZ UNE PAGE', menu, index=menu.index(st.session_state.page_choice))
-
-# the side bar that contains radio buttons for selection of game
-with st.sidebar:
-    game = st.radio('SELECT A GAME',
-    ('ACCEUIL', 'GAME 1', 'GAME 2'),
-    index=('ACCEUIL', 'GAME 1', 'GAME 2').index(st.session_state.page_choice))
-
-
-# Stocker la valeur de la page sélectionnée dans la variable de session
-st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
-
-with st.container():
-
-
-    if st.session_state.page_choice == 'ACCEUIL':
-        st.title('Bienvenue !')
-        st.header('Tester notre application et tester les prédictions de notre modèle !')
-
-    if st.session_state.page_choice == 'GAME 1':
-        st.title('Number Recognition')
-
-        # Function to preprocess the image
-        def preprocess_image(image):
-            # Convert the image to grayscale
-            image = image.convert('L')
-            # Resize the image to the required input shape of the model
-            image = image.resize((28, 28))
-            # Invert the pixel values
-            image = np.invert(image)
-            # Reshape the image to a 4D array with a batch size of 1
-            image = np.reshape(image, (1, 28, 28, 1))
-            # Normalize the pixel values
-            image = image / 255.0
-            return image
-
-        # Create a file uploader widget
-        uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
-
-        if uploaded_file is not None:
-            # Display the uploaded image
-            image = Image.open(uploaded_file)
+            if uploaded_file is not None:
+                # Display the uploaded image
+                image = Image.open(uploaded_file)
 
             # Resize the image to a width of 300 pixels and proportional height
             width, height = image.size
@@ -125,101 +116,100 @@ with st.container():
 
             # Display the predicted number
             st.header(f"Predicted number is: {predicted_number}")
-
-    if st.session_state.page_choice == 'GAME 2':
-        # Game 2
-        st.title('Number Recognition')
-        canvas_size = 300
-        predictions = []
-        n_prediction = st.session_state.get('n_prediction', 0)
-        score = st.session_state.get('score', 0)
-        max_try = 10
-        game_over = False
-        try_left = st.session_state.get('try_left', 10)
-
-
-        canvas = st_canvas(
-            fill_color="black",
-            stroke_width=10,
-            stroke_color="white",
-            background_color="black",
-            height=300,
-            width=300,
-            drawing_mode="freedraw",
-            key="canvas"
-        )
-
-        true_number = st.selectbox("Veuillez saisir le chiffre que vous allez dessiner", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-        predict_button = st.button('Predict', key=f"predict")
-
-        def pred_model():
+        if selected == "GAME 2":
+            # Game 2
+            st.title('Number Recognition')
+            canvas_size = 300
             predictions = []
-            img_resized = Image.fromarray(canvas.image_data.astype('uint8')).resize((28, 28))
-
-            # Convert the image to grayscale
-            img_gray = img_resized.convert('L')
-
-            # Convertir l'image en array numpy
-            img_array = np.array(img_gray)
-
-            # Traiter l'image comme nécessaire (ex: la normaliser)
-            processed_img_array = img_array / 255.0
-
-            st.image(processed_img_array)
-            # Stocker l'image dans une variable
-            image = np.expand_dims(processed_img_array, axis=0)
-
-            # Prédire le chiffre en utilisant le modèle
-            prediction = model.predict(image)[0]
-
-            # Ajouter la prédiction à la liste de prédictions
-            predictions.append(np.argmax(prediction))
-
-            return predictions
-
-        def test():
-            global n_prediction, score, try_left
-            predictions = pred_model()
-            # Afficher le résultat de la prédiction
-
-            # Incrémenter le compteur de prédictions
-            n_prediction += 1
-            try_left -= 1
-
-            # Vérifier si la prédiction est correcte
-            if np.argmax(predictions) == true_number:
-                score += 1
-                st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 1)")
-            else:
-                st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 0)")
-
-            # Stocker les nouvelles valeurs dans st.session_state
-            st.session_state['n_prediction'] = n_prediction
-            st.session_state['score'] = score
-            st.session_state['try_left'] = try_left
+            n_prediction = st.session_state.get('n_prediction', 0)
+            score = st.session_state.get('score', 0)
+            max_try = 10
+            game_over = False
+            try_left = st.session_state.get('try_left', 10)
 
 
-        ################################################################################
+            canvas = st_canvas(
+                fill_color="black",
+                stroke_width=10,
+                stroke_color="white",
+                background_color="black",
+                height=300,
+                width=300,
+                drawing_mode="freedraw",
+                key="canvas"
+            )
 
-        def play():
-            global n_prediction, score, try_left, game_over
-            # Prédire le chiffre dessiné par l'utilisateur
+            true_number = st.selectbox("Veuillez saisir le chiffre que vous allez dessiner", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+            predict_button = st.button('Predict', key=f"predict")
 
-            if predict_button:
-                test()
+            def pred_model():
+                predictions = []
+                img_resized = Image.fromarray(canvas.image_data.astype('uint8')).resize((28, 28))
 
-            else :
-                st.write("appuyer sur le bouton predict !")
+                # Convert the image to grayscale
+                img_gray = img_resized.convert('L')
 
-            if n_prediction == max_try:
-                # Calculer le score final
-                score_ratio = score / max_try
+                # Convertir l'image en array numpy
+                img_array = np.array(img_gray)
 
-                # Afficher les statistiques
-                st.write("Le jeu est terminé !")
-                st.write(f"Vous avez fait {max_try} tentatives, et votre score est de {score}/{max_try}.")
-                st.write(f"Votre ratio de bonnes réponses est de {score_ratio:.2f}.")
+                # Traiter l'image comme nécessaire (ex: la normaliser)
+                processed_img_array = img_array / 255.0
+
+                st.image(processed_img_array)
+                # Stocker l'image dans une variable
+                image = np.expand_dims(processed_img_array, axis=0)
+
+                # Prédire le chiffre en utilisant le modèle
+                prediction = model.predict(image)[0]
+
+                # Ajouter la prédiction à la liste de prédictions
+                predictions.append(np.argmax(prediction))
+
+                return predictions
+
+            def test():
+                global n_prediction, score, try_left
+                predictions = pred_model()
+                # Afficher le résultat de la prédiction
+
+                # Incrémenter le compteur de prédictions
+                n_prediction += 1
+                try_left -= 1
+
+                # Vérifier si la prédiction est correcte
+                if np.argmax(predictions) == true_number:
+                    score += 1
+                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 1)")
+                else:
+                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 0)")
+
+                # Stocker les nouvelles valeurs dans st.session_state
+                st.session_state['n_prediction'] = n_prediction
+                st.session_state['score'] = score
+                st.session_state['try_left'] = try_left
+
+
+            ################################################################################
+
+            def play():
+                global n_prediction, score, try_left, game_over
+                # Prédire le chiffre dessiné par l'utilisateur
+
+                if predict_button:
+                    test()
+
+                else :
+                    st.write("appuyer sur le bouton predict !")
+
+                if n_prediction == max_try:
+                    # Calculer le score final
+                    score_ratio = score / max_try
+
+                    # Afficher les statistiques
+                    st.write("Le jeu est terminé !")
+                    st.write(f"Vous avez fait {max_try} tentatives, et votre score est de {score}/{max_try}.")
+                    st.write(f"Votre ratio de bonnes réponses est de {score_ratio:.2f}.")
 
 
 
-        play()
+            play()
