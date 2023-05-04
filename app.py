@@ -143,23 +143,28 @@ with st.container():
                 # Display the uploaded image
                 image = Image.open(uploaded_file)
 
-            # Resize the image to a width of 300 pixels and proportional height
-            width, height = image.size
-            new_width = 600
-            new_height = 600
-            resized_image = image.resize((new_width, new_height))
+                # Resize the image to a width of 300 pixels and proportional height
+                width, height = image.size
+                new_width = 600
+                new_height = 600
+                resized_image = image.resize((new_width, new_height))
 
-            st.image(resized_image, caption='Uploaded Image', use_column_width=False)
+                st.image(resized_image, caption='Uploaded Image', use_column_width=False)
 
-            # Preprocess the image
-            preprocessed_image = preprocess_image(image)
+                # Preprocess the image
+                preprocessed_image = preprocess_image(image)
 
-            # Use the model to predict the number in the image
-            prediction = model.predict(preprocessed_image)
-            predicted_number = np.argmax(prediction)
+                # Use the model to predict the number in the image
+                prediction = model.predict(preprocessed_image)
+                predicted_number = np.argmax(prediction)
 
-            # Display the predicted number
-            st.header(f"Predicted number is: {predicted_number}")
+                # Display the predicted number
+                st.header(f"Predicted number is: {predicted_number}")
+
+            else:
+                st.write("Please upload an image file")
+
+
         if selected == "GAME 2":
             # Game 2
             st.title('Number Recognition')
