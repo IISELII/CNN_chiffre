@@ -5,7 +5,7 @@ from PIL import Image
 import pickle
 from streamlit_option_menu import option_menu
 from streamlit_extras.switch_page_button import switch_page
-
+from tensorflow import keras
 
 # Configurer l'application Streamlit
 st.set_page_config(page_title="NB_RECO", page_icon=":pencil2:", layout="wide")
@@ -23,8 +23,7 @@ def local_css(file_name):
 local_css("style.css")
 
 # Charger le modèle entraîné
-with open('model_3.pickle', 'rb') as f:
-        model = pickle.load(f)
+model = keras.models.load_model('modeloo.h5')
 
 
 ######################################################################################################
