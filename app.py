@@ -5,26 +5,26 @@ from PIL import Image
 import pickle
 from streamlit_option_menu import option_menu
 from streamlit_extras.switch_page_button import switch_page
-
-
-# Configurer l'application Streamlit
-st.set_page_config(page_title="NBRECO", page_icon=":pencil2:", layout="wide")
-
+from tensorflow import keras
+from tensorflow.keras.models import Model
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # charger le css
 # with open('style.css') as css:
 #         st.markdown(f'<style>{css.read}</style>', unsafe_allow_html=True)
 
 
-def local_css(file_name):
-    with open(file_name) as c:
-        st.markdown(f'<style>{c.read()}</style>', unsafe_allow_html=True)
+# def local_css(file_name):
+#     with open(file_name) as c:
+#         st.markdown(f'<style>{c.read()}</style>', unsafe_allow_html=True)
 
-local_css("style.css")
+# local_css("style.css")
 
-# Charger le modèle entraîné
-with open('model_3.pickle', 'rb') as f:
-        model = pickle.load(f)
+# # Charger le modèle entraîné
+# with open('model_3.pickle', 'rb') as f:
+#         model = pickle.load(f)
 
 
 ######################################################################################################
@@ -48,6 +48,25 @@ with open('model_3.pickle', 'rb') as f:
 
 # Stocker la valeur de la page sélectionnée dans la variable de session
 # st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
+
+# Configurer l'application Streamlit
+st.set_page_config(page_title="NBRECO", page_icon=":pencil2:", layout="wide")
+
+# import du modèle
+model = keras.models.load_model('modeloo.h5')
+
+model_aug = keras.models.load_model('model_aug.h5')
+
+df = pd.read_csv('data/train.csv')
+
+# séparer les features de la target
+X = df.drop(["label"], axis = 1)
+y = df["label"]
+
+# train test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+
+X_test_arr = X_test.values.reshape(-1, 28, 28, 1)
 
 with st.container():
 
@@ -74,6 +93,31 @@ with st.container():
             st.subheader('ACCEUIL')
             st.title('Bienvenue !')
             st.header('Tester notre application et tester les prédictions de notre modèle !')
+            st.header("Voici l'architecture du modèle de prédiction :")
+            successive_outputs = [layer.output for layer in model.layers[0:]]
+            visualization_model = Model(inputs = model.input, outputs = successive_outputs)
+            test = ((X_test_arr).reshape((-1,28,28,1)))/255.0
+            successive_feature_maps = visualization_model.predict(test)
+            layer_names = [layer.name for layer in model.layers]
+            for layer_name, feature_map in zip(layer_names, successive_feature_maps):
+                if len(feature_map.shape) == 4:
+                        n_features = feature_map.shape[-1]
+                        size = feature_map.shape[ 1]
+                        display_grid = np.zeros((size, size * n_features))
+                        for i in range(n_features):
+                                x  = feature_map[-1, :, :, i]
+                                x -= x.mean()
+                                x /= x.std ()
+                                x *=  64
+                                x += 128
+                                x  = np.clip(x, 0, 255).astype('uint8')
+                                display_grid[:, i * size : (i + 1) * size] = x
+                                scale = 20. / n_features
+                        fig = plt.figure( figsize=(scale * n_features, scale) )
+                        plt.title ( layer_name )
+                        plt.grid  ( False )
+                        plt.imshow( display_grid, aspect='auto', cmap='viridis' )
+                        st.pyplot(fig)
 
         if selected == "GAME 1":
             st.title('Number Recognition')
@@ -160,13 +204,12 @@ with st.container():
                 image = np.expand_dims(processed_img_array, axis=0)
 
                 # Prédire le chiffre en utilisant le modèle
-                prediction = model.predict(image)
+                prediction = model_aug.predict(image)
 
                 st.write(prediction)
                 # Ajouter la prédiction à la liste de prédictions
                 predictions.append(np.argmax(prediction))
 
-                st.write(np.argmax(predictions))
                 return predictions
 
             def test():
@@ -181,9 +224,9 @@ with st.container():
                 # Vérifier si la prédiction est correcte
                 if np.argmax(predictions) == true_number:
                     score += 1
-                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 1)")
+                    st.header(f"Votre chiffre est : {predictions[0]} !")
                 else:
-                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 0)")
+                    st.header(f"Votre chiffre est : {predictions[0]} !")
 
                 # Stocker les nouvelles valeurs dans st.session_state
                 st.session_state['n_prediction'] = n_prediction
