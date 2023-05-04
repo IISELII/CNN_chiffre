@@ -2,10 +2,12 @@ import streamlit as st
 from streamlit_drawable_canvas import st_canvas
 import numpy as np
 from PIL import Image
-import pickle
 from streamlit_option_menu import option_menu
 from streamlit_extras.switch_page_button import switch_page
 from tensorflow import keras
+import matplotlib.pyplot as plt
+import pandas as pd
+from sklearn.model_selection import train_test_split
 
 # Configurer l'application Streamlit
 st.set_page_config(page_title="NB_RECO", page_icon=":pencil2:", layout="wide")
@@ -48,6 +50,18 @@ model = keras.models.load_model('modeloo.h5')
 # Stocker la valeur de la page sélectionnée dans la variable de session
 # st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
 
+df = pd.read_csv('data/train.csv')
+
+# séparer les features de la target
+X = df.drop(["label"], axis = 1)
+y = df["label"]
+
+# train test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
+
+X_test_arr = X_test.values.reshape(-1, 28, 28, 1)
+
+
 with st.container():
 
     with st.container():
@@ -73,6 +87,32 @@ with st.container():
             st.subheader('ACCEUIL')
             st.title('Bienvenue !')
             st.header('Tester notre application et tester les prédictions de notre modèle !')
+            successive_outputs = [layer.output for layer in model.layers[0:]]
+            visualization_model = keras.models.Model(inputs = model.input, outputs = successive_outputs)
+            test = ((X_test_arr).reshape((-1,28,28,1)))/255.0
+            successive_feature_maps = visualization_model.predict(test)
+            layer_names = [layer.name for layer in model.layers]
+            for layer_name, feature_map in zip(layer_names, successive_feature_maps):
+                if len(feature_map.shape) == 4:
+                        n_features = feature_map.shape[-1]
+                        size = feature_map.shape[ 1]
+                        display_grid = np.zeros((size, size * n_features))
+                        for i in range(n_features):
+                                x  = feature_map[-1, :, :, i]
+                                x -= x.mean()
+                                x /= x.std ()
+                                x *=  64
+                                x += 128
+                                x  = np.clip(x, 0, 255).astype('uint8')
+                                display_grid[:, i * size : (i + 1) * size] = x
+                                scale = 20. / n_features
+                        fig = plt.figure( figsize=(scale * n_features, scale) )
+                        plt.title ( layer_name )
+                        plt.grid  ( False )
+                        plt.imshow( display_grid, aspect='auto', cmap='viridis' )
+                        st.pyplot(fig)
+
+
 
         if selected == "GAME 1":
             st.title('Number Recognition')
