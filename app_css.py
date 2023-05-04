@@ -203,7 +203,6 @@ with st.container():
                 # Ajouter la prédiction à la liste de prédictions
                 predictions.append(np.argmax(prediction))
 
-                st.write(np.argmax(predictions))
                 return predictions
 
             def test():
@@ -218,9 +217,9 @@ with st.container():
                 # Vérifier si la prédiction est correcte
                 if np.argmax(predictions) == true_number:
                     score += 1
-                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 1)")
+                    st.header(f"Votre chiffre est : {predictions[0]} !")
                 else:
-                    st.write(f"Le chiffre est {np.argmax(predictions)} ! (+ 0)")
+                    st.header(f"Votre chiffre est : {predictions[0]} !")
 
                 # Stocker les nouvelles valeurs dans st.session_state
                 st.session_state['n_prediction'] = n_prediction
