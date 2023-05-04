@@ -50,6 +50,7 @@ model = keras.models.load_model('modeloo.h5')
 # Stocker la valeur de la page sélectionnée dans la variable de session
 # st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
 
+st.cache_data
 df = pd.read_csv('data/train.csv')
 
 # séparer les features de la target
