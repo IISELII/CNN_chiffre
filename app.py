@@ -6,7 +6,6 @@ import pickle
 from streamlit_option_menu import option_menu
 from streamlit_extras.switch_page_button import switch_page
 from tensorflow import keras
-from tensorflow.keras.models import Model
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -57,16 +56,9 @@ model = keras.models.load_model('modeloo.h5')
 
 model_aug = keras.models.load_model('model_aug.h5')
 
-df = pd.read_csv('data/train.csv')
-
-# séparer les features de la target
-X = df.drop(["label"], axis = 1)
-y = df["label"]
-
-# train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
-
-X_test_arr = X_test.values.reshape(-1, 28, 28, 1)
+sample = pd.read_csv('data/sample.csv')
+X_s = sample.drop(["label"], axis = 1)
+X_s = X_s.values.reshape(-1, 28, 28, 1)
 
 with st.container():
 
@@ -95,8 +87,8 @@ with st.container():
             st.header('Tester notre application et tester les prédictions de notre modèle !')
             st.header("Voici l'architecture du modèle de prédiction :")
             successive_outputs = [layer.output for layer in model.layers[0:]]
-            visualization_model = Model(inputs = model.input, outputs = successive_outputs)
-            test = ((X_test_arr).reshape((-1,28,28,1)))/255.0
+            visualization_model = keras.models.Model(inputs = model.input, outputs = successive_outputs)
+            test = ((X_s).reshape((-1,28,28,1)))/255.0
             successive_feature_maps = visualization_model.predict(test)
             layer_names = [layer.name for layer in model.layers]
             for layer_name, feature_map in zip(layer_names, successive_feature_maps):
