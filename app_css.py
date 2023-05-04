@@ -50,17 +50,10 @@ model = keras.models.load_model('modeloo.h5')
 # Stocker la valeur de la page sélectionnée dans la variable de session
 # st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
 
-st.cache_data
-df = pd.read_csv('data/train.csv')
 
-# séparer les features de la target
-X = df.drop(["label"], axis = 1)
-y = df["label"]
-
-# train test split
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2)
-
-X_test_arr = X_test.values.reshape(-1, 28, 28, 1)
+sample = pd.read_csv('data/sample.csv')
+X_s = sample.drop(["label"], axis = 1)
+X_s = X_s.values.reshape(-1, 28, 28, 1)
 
 
 with st.container():
@@ -90,7 +83,7 @@ with st.container():
             st.header('Tester notre application et tester les prédictions de notre modèle !')
             successive_outputs = [layer.output for layer in model.layers[0:]]
             visualization_model = keras.models.Model(inputs = model.input, outputs = successive_outputs)
-            test = ((X_test_arr).reshape((-1,28,28,1)))/255.0
+            test = ((X_s).reshape((-1,28,28,1)))/255.0
             successive_feature_maps = visualization_model.predict(test)
             layer_names = [layer.name for layer in model.layers]
             for layer_name, feature_map in zip(layer_names, successive_feature_maps):
@@ -139,23 +132,27 @@ with st.container():
                 # Display the uploaded image
                 image = Image.open(uploaded_file)
 
-            # Resize the image to a width of 300 pixels and proportional height
-            width, height = image.size
-            new_width = 600
-            new_height = 600
-            resized_image = image.resize((new_width, new_height))
+                # Resize the image to a width of 300 pixels and proportional height
+                width, height = image.size
+                new_width = 600
+                new_height = 600
+                resized_image = image.resize((new_width, new_height))
 
-            st.image(resized_image, caption='Uploaded Image', use_column_width=False)
+                st.image(resized_image, caption='Uploaded Image', use_column_width=False)
 
-            # Preprocess the image
-            preprocessed_image = preprocess_image(image)
+                # Preprocess the image
+                preprocessed_image = preprocess_image(image)
 
-            # Use the model to predict the number in the image
-            prediction = model.predict(preprocessed_image)
-            predicted_number = np.argmax(prediction)
+                # Use the model to predict the number in the image
+                prediction = model.predict(preprocessed_image)
+                predicted_number = np.argmax(prediction)
 
-            # Display the predicted number
-            st.header(f"Predicted number is: {predicted_number}")
+                # Display the predicted number
+                st.header(f"Predicted number is: {predicted_number}")
+
+            else:
+                st.write("Please upload an image file")
+
         if selected == "GAME 2":
             # Game 2
             st.title('Number Recognition')
