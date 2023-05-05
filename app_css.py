@@ -154,16 +154,18 @@ with st.container():
                 st.write("Please upload an image file")
 
         if selected == "GAME 2":
+
+            if "init" not in st.session_state:
+                st.session_state.init = True
+
             # Game 2
             st.title('Number Recognition')
             canvas_size = 300
             predictions = []
             n_prediction = st.session_state.get('n_prediction', 0)
-            score = st.session_state.get('score', 0)
-            max_try = 10
+            max_try = 5
             game_over = False
-            try_left = st.session_state.get('try_left', 10)
-
+            try_left = st.session_state.get('try_left', 5)
 
             canvas = st_canvas(
                 fill_color="black",
@@ -176,11 +178,9 @@ with st.container():
                 key="canvas"
             )
 
-            true_number = st.selectbox("Veuillez saisir le chiffre que vous allez dessiner", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
-            predict_button = st.button('Predict', key=f"predict")
+
 
             def pred_model():
-                predictions = []
                 img_resized = Image.fromarray(canvas.image_data.astype('uint8')).resize((28, 28))
 
                 # Convert the image to grayscale
@@ -203,51 +203,91 @@ with st.container():
                 # Ajouter la prédiction à la liste de prédictions
                 predictions.append(np.argmax(prediction))
 
+                st.session_state['predictions'] = predictions
+
                 return predictions
 
-            def test():
-                global n_prediction, score, try_left
-                predictions = pred_model()
-                # Afficher le résultat de la prédiction
 
-                # Incrémenter le compteur de prédictions
-                n_prediction += 1
-                try_left -= 1
+            if canvas is not None:
 
-                # Vérifier si la prédiction est correcte
-                if np.argmax(predictions) == true_number:
-                    score += 1
-                    st.header(f"Votre chiffre est : {predictions[0]} !")
-                else:
-                    st.header(f"Votre chiffre est : {predictions[0]} !")
-
-                # Stocker les nouvelles valeurs dans st.session_state
-                st.session_state['n_prediction'] = n_prediction
-                st.session_state['score'] = score
-                st.session_state['try_left'] = try_left
-
-
-            ################################################################################
-
-            def play():
-                global n_prediction, score, try_left, game_over
-                # Prédire le chiffre dessiné par l'utilisateur
-
-                if predict_button:
-                    test()
-
-                else :
-                    st.write("appuyer sur le bouton predict !")
+                if 'key_b' not in st.session_state:
+                    st.session_state['key_b'] = 0
+                if 'key_g' not in st.session_state:
+                    st.session_state['key_g'] = 0
+                if 'score' not in st.session_state:
+                    st.session_state['score'] = 0
 
                 if n_prediction == max_try:
-                    # Calculer le score final
-                    score_ratio = score / max_try
+                    # Calculate the final score
+                    score_ratio = st.session_state['score'] / max_try
 
-                    # Afficher les statistiques
-                    st.write("Le jeu est terminé !")
-                    st.write(f"Vous avez fait {max_try} tentatives, et votre score est de {score}/{max_try}.")
-                    st.write(f"Votre ratio de bonnes réponses est de {score_ratio:.2f}.")
+                    # Display the statistics
+                    st.header("The game is over!")
+                    st.header(f"Your score ratio is {score_ratio:.2f}.")
+
+                    restart = st.button("Restart", key='restart')
+
+                    if restart:
+                        "restart the page"
+                        # Remove the stored values from st.session_state
+                        st.session_state.pop('score', None)
+                        st.session_state.pop('n_prediction', None)
+                        st.session_state.pop('try_left', None)
+                        st.session_state.pop('key_b', None)
+                        st.session_state.pop('key_g', None)
+                        st.experimental_rerun()
+
+                predict_button = st.session_state.get('predict_button', False)
+
+                if predict_button:
+
+                    col3, col4 = st.columns(2)
+                    with col3:
+                        predictions = pred_model()
+
+                        # Increment the prediction counter
+                        n_prediction += 1
+                        try_left -= 1
+
+                    with col4:
+                        st.write('')
+                        st.write(f"Your number is: {predictions[0]}!")
+                        st.write(f'You have {try_left} tries left')
+
+                        # Store the new values in st.session_state
+                        st.session_state['n_prediction'] = n_prediction
+                        st.session_state['try_left'] = try_left
+
+                        # Reset the 'predict_button' state
+                        st.session_state['predict_button'] = False
 
 
 
-            play()
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write("Good prediction ?")
+                    # Add buttons for correct and incorrect predictions
+                    if st.button('Good', key=f"g{st.session_state['key_g']}"):
+                        st.session_state['score'] += 1
+                        st.session_state['key_g'] += 1
+
+
+                with col2:
+                    st.write("Bad prediction ? ")
+                    if st.button('Bad', key=f"b{st.session_state['key_b']}"):
+                        st.write('Bad prediction :(')
+                        st.session_state['key_b'] += 1
+
+
+
+
+
+
+# Check if the prediction is correct
+                    # if st.button('Bad', key=f"b{key_b}"):
+                    #     st.write('Too bad :(')
+
+                    # if st.button('Good', key=f"g{key_g}"):
+                    #     score += 1
+                    #     st.write(f'{score}')
+                    #     st.write('Great job!')
