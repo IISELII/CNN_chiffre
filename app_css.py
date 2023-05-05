@@ -28,27 +28,6 @@ local_css("style.css")
 model = keras.models.load_model('modeloo.h5')
 
 
-######################################################################################################
-
-# Initialiser la variable de session pour le choix de la page
-# if 'page_choice' not in st.session_state:
-#     st.session_state.page_choice = 'ACCEUIL'
-
-
-
-# Créer la barre de menu avec st.sidebar
-# menu = ['ACCEUIL', 'GAME 1', 'GAME 2']
-# choice = st.sidebar.selectbox('CHOISISSEZ UNE PAGE', menu, index=menu.index(st.session_state.page_choice))
-
-# the side bar that contains radio buttons for selection of game
-# with st.sidebar:
-#     game = st.radio('SELECT A GAME',
-#     ('ACCEUIL', 'GAME 1', 'GAME 2'),
-#     index=('ACCEUIL', 'GAME 1', 'GAME 2').index(st.session_state.page_choice))
-
-
-# Stocker la valeur de la page sélectionnée dans la variable de session
-# st.session_state.page_choice = choice if choice != 'ACCEUIL' else game
 
 
 sample = pd.read_csv('data/sample.csv')
@@ -78,7 +57,6 @@ with st.container():
         )
 
         if selected == "ACCEUIL":
-            st.subheader('ACCEUIL')
             st.title('Bienvenue !')
             st.header('Tester notre application et tester les prédictions de notre modèle !')
             successive_outputs = [layer.output for layer in model.layers[0:]]
@@ -165,7 +143,7 @@ with st.container():
             n_prediction = st.session_state.get('n_prediction', 0)
             max_try = 5
             game_over = False
-            try_left = st.session_state.get('try_left', 5)
+            try_left = st.session_state.get('try_left', 6)
 
             canvas = st_canvas(
                 fill_color="black",
@@ -217,7 +195,7 @@ with st.container():
                 if 'score' not in st.session_state:
                     st.session_state['score'] = 0
 
-                if n_prediction == max_try:
+                if n_prediction > max_try:
                     # Calculate the final score
                     score_ratio = st.session_state['score'] / max_try
 
@@ -239,6 +217,9 @@ with st.container():
 
                 predict_button = st.session_state.get('predict_button', False)
 
+                if st.button('Predict', key=f"predict"):
+                    predict_button = True
+
                 if predict_button:
 
                     col3, col4 = st.columns(2)
@@ -253,6 +234,7 @@ with st.container():
                         st.write('')
                         st.write(f"Your number is: {predictions[0]}!")
                         st.write(f'You have {try_left} tries left')
+                        st.write(f"You're score is {st.session_state['score']}")
 
                         # Store the new values in st.session_state
                         st.session_state['n_prediction'] = n_prediction
@@ -277,17 +259,3 @@ with st.container():
                     if st.button('Bad', key=f"b{st.session_state['key_b']}"):
                         st.write('Bad prediction :(')
                         st.session_state['key_b'] += 1
-
-
-
-
-
-
-# Check if the prediction is correct
-                    # if st.button('Bad', key=f"b{key_b}"):
-                    #     st.write('Too bad :(')
-
-                    # if st.button('Good', key=f"g{key_g}"):
-                    #     score += 1
-                    #     st.write(f'{score}')
-                    #     st.write('Great job!')
