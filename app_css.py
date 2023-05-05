@@ -8,6 +8,8 @@ from tensorflow import keras
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import pickle
+import cv2
 
 # Configurer l'application Streamlit
 st.set_page_config(page_title="NB_RECO", page_icon=":pencil2:", layout="wide")
@@ -25,9 +27,12 @@ def local_css(file_name):
 local_css("style.css")
 
 # Charger le modèle entraîné
-model = keras.models.load_model('modeloo.h5')
+model_aug = keras.models.load_model('model_aug.h5')
 
-
+# Sauvegarder le modèle en format Pickle
+with open('test_model.pkl', 'rb') as f:
+    model_test = pickle.load(f)
+    f.close()
 
 
 sample = pd.read_csv('data/sample.csv')
@@ -59,11 +64,11 @@ with st.container():
         if selected == "ACCEUIL":
             st.title('Bienvenue !')
             st.header('Tester notre application et tester les prédictions de notre modèle !')
-            successive_outputs = [layer.output for layer in model.layers[0:]]
-            visualization_model = keras.models.Model(inputs = model.input, outputs = successive_outputs)
+            successive_outputs = [layer.output for layer in model_test.layers[0:]]
+            visualization_model = keras.models.Model(inputs = model_test.input, outputs = successive_outputs)
             test = ((X_s).reshape((-1,28,28,1)))/255.0
             successive_feature_maps = visualization_model.predict(test)
-            layer_names = [layer.name for layer in model.layers]
+            layer_names = [layer.name for layer in model_test.layers]
             for layer_name, feature_map in zip(layer_names, successive_feature_maps):
                 if len(feature_map.shape) == 4:
                         n_features = feature_map.shape[-1]
@@ -122,7 +127,7 @@ with st.container():
                 preprocessed_image = preprocess_image(image)
 
                 # Use the model to predict the number in the image
-                prediction = model.predict(preprocessed_image)
+                prediction = model_test.predict(preprocessed_image)
                 predicted_number = np.argmax(prediction)
 
                 # Display the predicted number
@@ -159,29 +164,23 @@ with st.container():
 
 
             def pred_model():
-                img_resized = Image.fromarray(canvas.image_data.astype('uint8')).resize((28, 28))
+                img_resized = cv2.resize(canvas.image_data.astype('uint8'), (28, 28))
 
                 # Convert the image to grayscale
-                img_gray = img_resized.convert('L')
+                img_gray = cv2.cvtColor(img_resized, cv2.COLOR_BGR2GRAY)
 
-                # Convertir l'image en array numpy
-                img_array = np.array(img_gray)
+                # # Traiter l'image comme nécessaire (ex: la normaliser)
+                # processed_img_array = img_gray / 255.0
 
-                # Traiter l'image comme nécessaire (ex: la normaliser)
-                processed_img_array = img_array / 255.0
-
-                st.image(processed_img_array)
-                # Stocker l'image dans une variable
-                image = np.expand_dims(processed_img_array, axis=0)
+                st.image(img_gray)
+                image = img_gray.reshape(1, 28, 28, 1)
 
                 # Prédire le chiffre en utilisant le modèle
-                prediction = model.predict(image)
+                prediction = model_test.predict(image)
 
                 st.write(prediction)
                 # Ajouter la prédiction à la liste de prédictions
                 predictions.append(np.argmax(prediction))
-
-                st.session_state['predictions'] = predictions
 
                 return predictions
 
